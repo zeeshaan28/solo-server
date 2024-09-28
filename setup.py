@@ -12,7 +12,7 @@ extra_files = package_files('solo_server/templates')
 
 setup(
     name="solo-server",
-    version="0.1.8",
+    version="0.1.9",
     packages=find_packages(include=['solo_server', 'solo_server.*']),
     include_package_data=True,
     package_data={
