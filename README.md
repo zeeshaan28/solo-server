@@ -46,7 +46,7 @@ solo-server init
 Welcome to Solo Server Project Initialization!
 ----------------------------------------------
 Enter your project name [my_project]: solo_project
-Choose a project template [basic]: llm
+Choose a project template [basic]: 1
 Project 'solo_project' initialized successfully!
 ```
 </details>
@@ -62,7 +62,7 @@ solo-server start
 ```
 
 
-Your server should now be running at `http://localhost:5070`.
+Your server should now be running at `http://localhost:50100`.
 
 <details>
   <summary>Test the Server</summary>
@@ -72,7 +72,7 @@ Send a POST request to the server or use client.py to test:
    ```bash
    curl -X POST -H "Content-Type: application/json" \
         -d '{"prompt": "Hello, world!"}' \
-        http://localhost:5070
+        http://localhost:50100
    ```
 </details>
 
@@ -82,11 +82,10 @@ Send a POST request to the server or use client.py to test:
 Solo Server provides several templates to kickstart your project:
 
 - **basic**: A minimal project setup.
+- **huggingface**: Hugging Face models.
 - **llm**: Language models and text processing.
 - **vision**: Computer vision projects.
-- **audio**: Audio analysis and speech recognition.
-- **nlp**: Language analysis (e.g., NER and sentiment analysis).
-- **tabular**: Data analysis on tabular datasets.
+- **audio**: Audio projects.
 - **tools**: Tool calling for AI agents such as search, database and cmd execution.
 - **compound**: Complex projects involving multiple AI components.
 
@@ -158,9 +157,7 @@ Solo Server provides several templates to kickstart your project:
 - **`solo-server init`**: Initialize a new project with an interactive setup.
 - **`solo-server start`**: Start the server for the current project.
 - **`solo-server stop`**: Stop the running server.
-- **`solo-server restart`**: Restart the server.
 - **`solo-server status`**: Check the status of the server.
-- **`solo-server install`**: Install project dependencies.
 - **`solo-server config`**: Manage project configuration.
   - `solo-server config init`: Generate a default configuration file.
   - `solo-server config show`: Display the current configuration.
