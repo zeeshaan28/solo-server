@@ -5,36 +5,37 @@ import argparse
 SERVER_URL = 'http://127.0.0.1:50100'
 
 def main():
-    # Set up command line argument parsing
-    parser = argparse.ArgumentParser(description="Send a prompt to the LitServe Litgpt server.")
-    parser.add_argument("--prompt", type=str, required=True, help="The prompt text to generate text from.")
-    
-    # Parse command line arguments
-    args = parser.parse_args()
-    
-    # Use the provided prompt from the command line
-    prompt_text = args.prompt
-    
-    # Define the server's URL and the endpoint
-    predict_endpoint = "/predict"
-    
-    # Prepare the request data as a dictionary
-    request_data = {
-        "prompt": prompt_text
-    }
-    
-    # Send a POST request to the server and receive the response
-    response = requests.post(f"{SERVER_URL}{predict_endpoint}", json=request_data)
-    
-    # Check if the request was successful
-    if response.status_code == 200:
-        # Parse the JSON response
-        response_data = json.loads(response.text)
+    parser = argparse.ArgumentParser(description="Send a query to the server.")
+    parser.add_argument("--query", type=str, required=True, help="The query text to send to the server.")
         
-        # Print the output from the response
-        print("Response:", response_data["output"])
-    else:
-        print(f"Error: Received response code {response.status_code}")
+    args = parser.parse_args()
+        
+    payload = {
+        "query": args.query
+    }
+        
+    try:
+        response = requests.post(f"{SERVER_URL}/predict", json=payload)
+        response.raise_for_status()  # Raise an exception for bad status codes
+
+        try:
+            response_data = response.json()
+        except json.decoder.JSONDecodeError:
+            # If the response is not JSON formatted
+            print(f"Non-JSON response received:\n{response.text}")
+            return
+
+        # Check if response_data is a dictionary
+        if isinstance(response_data, dict):
+            # Adjust according to the actual structure of your response
+            result = response_data.get('response', response_data.get('output', response_data))
+        else:
+            # If it's not a dict, just use the response data directly
+            result = response_data
+
+        print(json.dumps(result, indent=2))
+    except requests.exceptions.RequestException as e:
+        print(f"Error sending request: {e}")
 
 if __name__ == "__main__":
     main()
