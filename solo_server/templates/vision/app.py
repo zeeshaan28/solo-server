@@ -1,45 +1,32 @@
-import torch, clip, multiprocessing
+import litserve as ls
+from transformers import AutoModel, AutoTokenizer
+import requests
 from PIL import Image
 from io import BytesIO
+import tempfile
 
-import litserve as ls
 
-
-class CLIPAPI(ls.LitAPI):
+class SimpleLitAPI(ls.LitAPI):
     def setup(self, device):
-        self.device = device
-        self.model, self.preprocess = clip.load("ViT-B/32", device=device)
-        
-        # Load candidate captions
-        with open('captions.txt', 'r') as file:
-            self.candidate_captions = [line.strip() for line in file.readlines()]
-        
-        # Pre-tokenize and pre-encode text captions
-        with torch.no_grad():
-            self.text_tokens = clip.tokenize(self.candidate_captions).to(self.device)
-            self.text_embeddings = self.model.encode_text(self.text_tokens)
+        self.tokenizer = AutoTokenizer.from_pretrained('ucaslcl/GOT-OCR2_0', trust_remote_code=True)
+        self.model = AutoModel.from_pretrained('ucaslcl/GOT-OCR2_0', trust_remote_code=True, low_cpu_mem_usage=True, device_map='cuda', use_safetensors=True, pad_token_id=self.tokenizer.eos_token_id)
+        self.model = self.model.eval().cuda()
 
     def decode_request(self, request):
-        # Convert request to input tensor
-        image_bytes = bytes.fromhex(request["image_bytes"])
-        image = Image.open(BytesIO(image_bytes))
-        return self.preprocess(image).unsqueeze(0).to(self.device)
+        return request["input"] 
 
-    def predict(self, image_tensor):
-        # Compare the image against the list of captions
-        with torch.no_grad():
-            image_embedding = self.model.encode_image(image_tensor)
+    def predict(self, image_url: str):
+        response = requests.get(image_url)
+        img = Image.open(BytesIO(response.content))
 
-            # Calculating similarities with pre-encoded text features
-            similarities = (100.0 * image_embedding @ self.text_embeddings.T).softmax(dim=-1)
-            max_indices = similarities.argmax(dim=-1)
-
-            return [self.candidate_captions[idx] for idx in max_indices.cpu().numpy()]
+        with tempfile.NamedTemporaryFile(suffix='.jpg', delete=True) as temp_file:
+            img.save(temp_file.name)
+            output = self.model.chat(self.tokenizer, temp_file.name, ocr_type='format')
+            return {"output": output}
 
     def encode_response(self, output):
-        return {"description": output[0]}
+        return {"output": output} 
 
 if __name__ == "__main__":
-    api = CLIPAPI()
-    server = ls.LitServer(api, accelerator="auto")
-    server.run(port=8000)
+    server = ls.LitServer(SimpleLitAPI(), accelerator="auto", max_batch_size=1)
+    server.run(port=50100)
